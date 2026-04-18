@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:get/state_manager.dart';
 import 'package:viertoregym/services/json_reader.dart';
 
 class StudiosPage extends StatefulWidget {
@@ -17,81 +16,108 @@ class _StudiosPageState extends State<StudiosPage> {
   }
 
   late Future<List> studios = JsonReader.getStudios();
+  int _selectedStudioIndex = 0;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Column(
-        children: [
-          Container(
-            height: 160,
-            width: double.maxFinite,
-            color: Color(0xffc7e2c3),
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    "Studios",
-                    style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
-                  ),
-                  Column(
+      body: FutureBuilder(
+        future: studios,
+        builder: (context, asyncSnapshot) {
+          if (asyncSnapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          final studioList = asyncSnapshot.data ?? [];
+          if (studioList.isEmpty) {
+            return const Center(child: Text("No studios available"));
+          }
+
+          final selectedStudio =
+              studioList[_selectedStudioIndex.clamp(0, studioList.length - 1)];
+          final newsText =
+              selectedStudio["news"]?.toString() ??
+              "No news available for this studio";
+
+          return Column(
+            children: [
+              Container(
+                height: 160,
+                width: double.maxFinite,
+                color: const Color(0xffc7e2c3),
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
                     crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    spacing: 4,
                     children: [
-                      Text("We've extended our opening hours"),
-                      Text("June 2", style: TextStyle(color: Colors.grey)),
+                      const Text(
+                        "Studios",
+                        style: TextStyle(
+                          fontSize: 32,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        spacing: 4,
+                        children: [
+                          Text(newsText),
+                          Text(
+                            selectedStudio["name"].toString(),
+                            style: const TextStyle(color: Colors.grey),
+                          ),
+                        ],
+                      ),
                     ],
                   ),
-                ],
+                ),
               ),
-            ),
-          ),
-          Expanded(
-            child: FutureBuilder(
-              future: studios,
-              builder: (context, asyncSnapshot) {
-                if (asyncSnapshot.connectionState == ConnectionState.waiting) {
-                  return Center(child: CircularProgressIndicator());
-                }
-                return Stack(
+              Expanded(
+                child: Stack(
                   children: [
                     Positioned.fill(
                       child: Image.asset("assets/Map.png", fit: BoxFit.cover),
                     ),
                     Align(
-                      alignment: Alignment(.8, -.8),
+                      alignment: const Alignment(.8, -.8),
                       child: SizedBox(
                         height: 50,
                         width: 50,
                         child: InkWell(
-                          onTap: () => showData(0, asyncSnapshot.data!),
+                          onTap: () => selectStudio(0, studioList),
                           child: Image.asset("assets/Icon.png"),
                         ),
                       ),
                     ),
                     Align(
-                      alignment: Alignment(-.6, .38),
+                      alignment: const Alignment(-.6, .38),
                       child: SizedBox(
                         height: 50,
                         width: 50,
                         child: InkWell(
-                          onTap: () => showData(1, asyncSnapshot.data!),
+                          onTap: () => selectStudio(1, studioList),
                           child: Image.asset("assets/Icon.png"),
                         ),
                       ),
                     ),
                   ],
-                );
-              },
-            ),
-          ),
-        ],
+                ),
+              ),
+            ],
+          );
+        },
       ),
     );
+  }
+
+  void selectStudio(int index, List studios) {
+    setState(() {
+      _selectedStudioIndex = index;
+    });
+
+    showData(index, studios);
   }
 
   void showData(int i, List studios) {
@@ -106,6 +132,12 @@ class _StudiosPageState extends State<StudiosPage> {
       "saturday",
       "sunday",
     ];
+
+    final todayKey = days[DateTime.now().weekday - 1];
+    final todayOpeningHours = studio["opening_hours"][todayKey];
+    final occupancies = (todayOpeningHours?["occupancies"] as List?) ?? [];
+    final fromTime = todayOpeningHours?["from"]?.toString() ?? "00:00";
+    final startHour = int.tryParse(fromTime.split(":").first) ?? 0;
 
     Get.bottomSheet(
       Container(
@@ -168,26 +200,17 @@ class _StudiosPageState extends State<StudiosPage> {
               Expanded(
                 child: Row(
                   children: [
-                    if (studio["opening_hours"][days[DateTime.now().weekday -
-                            1]] !=
-                        null)
-                      for (
-                        int i = 0;
-                        i <
-                            (studio["opening_hours"][days[DateTime.now()
-                                            .weekday -
-                                        1]]["occupancies"]
-                                    as List)
-                                .length;
-                        i++
-                      )
+                    if (todayOpeningHours != null)
+                      for (int i = 0; i < occupancies.length; i++)
                         SizedBox(
                           height: 200,
                           child: Row(
                             crossAxisAlignment: CrossAxisAlignment.end,
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Text("${(i + 6).toString().padLeft(2, "0")}"),
+                              Text(
+                                "${(startHour + i).toString().padLeft(2, "0")}",
+                              ),
                               Container(
                                 width: 10,
                                 decoration: BoxDecoration(
@@ -195,12 +218,7 @@ class _StudiosPageState extends State<StudiosPage> {
                                   color: Color(0xff3fa220),
                                 ),
                                 height:
-                                    ((studio["opening_hours"][days[DateTime.now()
-                                                    .weekday -
-                                                1]]["occupancies"][i]
-                                            as int)
-                                        .toDouble() *
-                                    2),
+                                    ((occupancies[i] as int).toDouble() * 2),
                               ),
                             ],
                           ),
