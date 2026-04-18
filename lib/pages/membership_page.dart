@@ -177,13 +177,6 @@ class _MembershipPageState extends State<MembershipPage> {
       _originalLastName = lastNameController.text.trim();
       _originalDateOfBirth = dateOfBirthController.text.trim();
     });
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text("Your changes were saved."),
-        duration: Duration(seconds: 2),
-      ),
-    );
   }
 
   Future<void> _pickDateOfBirth() async {
