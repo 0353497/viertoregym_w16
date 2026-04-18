@@ -1,0 +1,294 @@
+{
+  "users": {
+    "barbara": {
+      "first_name": "Barbara",
+      "last_name": "Weinstein",
+      "date_of_birth": "1983-06-07",
+      "subscription": {
+        "type": "silver",
+        "expiration_date": "2025-06-29"
+      }
+    },
+    "michael": {
+      "first_name": "Michael",
+      "last_name": "Franco",
+      "date_of_birth": "2005-09-30",
+      "subscription": {
+        "type": "bronze",
+        "expiration_date": "2025-06-21"
+      }
+    }
+  },
+  "subscription_types": {
+    "bronze": {
+      "monthly_price_eur": "20.00"
+    },
+    "silver": {
+      "monthly_price_eur": "25.00"
+    },
+    "gold": {
+      "monthly_price_eur": "35.00"
+    }
+  },
+  "studios": [
+    {
+      "name": "AEGym",
+      "opening_hours": {
+        "monday": {
+          "from": "06:00",
+          "until": "18:00",
+          "occupancies": [
+            10,
+            25,
+            20,
+            15,
+            10,
+            10,
+            30,
+            35,
+            25,
+            70,
+            55,
+            25
+          ]
+        },
+        "tuesday": {
+          "from": "06:00",
+          "until": "18:00",
+          "occupancies": [
+            10,
+            25,
+            20,
+            15,
+            10,
+            10,
+            30,
+            35,
+            25,
+            70,
+            55,
+            25
+          ]
+        },
+        "wednesday": {
+          "from": "06:00",
+          "until": "18:00",
+          "occupancies": [
+            10,
+            25,
+            20,
+            15,
+            10,
+            10,
+            30,
+            35,
+            25,
+            70,
+            55,
+            25
+          ]
+        },
+        "thursday": {
+          "from": "06:00",
+          "until": "18:00",
+          "occupancies": [
+            10,
+            25,
+            20,
+            15,
+            10,
+            10,
+            30,
+            35,
+            25,
+            70,
+            55,
+            25
+          ]
+        },
+        "friday": {
+          "from": "06:00",
+          "until": "18:00",
+          "occupancies": [
+            10,
+            25,
+            20,
+            15,
+            10,
+            10,
+            30,
+            35,
+            25,
+            70,
+            55,
+            25
+          ]
+        },
+        "saturday": null,
+        "sunday": null
+      },
+      "news": "One smoothie per day is now free for all Gold members!"
+    },
+    {
+      "name": "Marktplatz-Studio",
+      "opening_hours": {
+        "monday": {
+          "from": "07:00",
+          "until": "23:00",
+          "occupancies": [
+            25,
+            20,
+            15,
+            10,
+            10,
+            30,
+            35,
+            25,
+            25,
+            45,
+            55,
+            70,
+            90,
+            75,
+            50
+          ]
+        },
+        "tuesday": {
+          "from": "07:00",
+          "until": "23:00",
+          "occupancies": [
+            25,
+            20,
+            15,
+            10,
+            10,
+            30,
+            35,
+            25,
+            25,
+            45,
+            55,
+            70,
+            90,
+            75,
+            50
+          ]
+        },
+        "wednesday": {
+          "from": "07:00",
+          "until": "23:00",
+          "occupancies": [
+            25,
+            20,
+            15,
+            10,
+            10,
+            30,
+            35,
+            25,
+            25,
+            45,
+            55,
+            70,
+            90,
+            75,
+            50
+          ]
+        },
+        "thursday": {
+          "from": "07:00",
+          "until": "23:00",
+          "occupancies": [
+            25,
+            20,
+            15,
+            10,
+            10,
+            30,
+            35,
+            25,
+            25,
+            45,
+            55,
+            70,
+            90,
+            75,
+            50
+          ]
+        },
+        "friday": {
+          "from": "07:00",
+          "until": "23:00",
+          "occupancies": [
+            25,
+            20,
+            15,
+            10,
+            10,
+            30,
+            35,
+            25,
+            25,
+            45,
+            55,
+            70,
+            90,
+            75,
+            50
+          ]
+        },
+        "saturday": {
+          "from": "08:00",
+          "until": "23:00",
+          "occupancies": [
+            20,
+            10,
+            5,
+            5,
+            20,
+            35,
+            25,
+            25,
+            45,
+            55,
+            70,
+            90,
+            75,
+            50
+          ]
+        },
+        "sunday": {
+          "from": "08:00",
+          "until": "23:00",
+          "occupancies": [
+            20,
+            10,
+            5,
+            5,
+            20,
+            35,
+            25,
+            25,
+            45,
+            55,
+            70,
+            90,
+            75,
+            50
+          ]
+        }
+      },
+      "news": null
+    }
+  ],
+  "broadcast_information": [
+    {
+      "created_on": "2025-06-02",
+      "message": "We've extended our opening hours"
+    },
+    {
+      "created_on": "2025-05-27",
+      "message": "We've opened a new location"
+    }
+  ]
+}
