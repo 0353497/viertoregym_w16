@@ -20,3 +20,4 @@ samples, guidance on mobile development, and a full API reference.
 
 
 ### build time: 26.0s
+### na cache: 18.3s
