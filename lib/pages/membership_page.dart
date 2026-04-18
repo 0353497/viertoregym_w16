@@ -12,18 +12,31 @@ class MembershipPage extends StatefulWidget {
 }
 
 class _MembershipPageState extends State<MembershipPage> {
+  final GlobalKey<FormState> formKey = GlobalKey<FormState>();
+  final TextEditingController firstNameController = TextEditingController();
+  final TextEditingController lastNameController = TextEditingController();
+  final TextEditingController dateOfBirthController = TextEditingController();
+
   bool isLoading = true;
-  String firstName = "";
-  String lastName = "";
-  String dateOfBirth = "";
   String subscriptionType = "";
   String expirationDate = "";
   String monthlyPrice = "";
+  String _originalFirstName = "";
+  String _originalLastName = "";
+  String _originalDateOfBirth = "";
 
   @override
   void initState() {
     super.initState();
     _loadMembershipData();
+  }
+
+  @override
+  void dispose() {
+    firstNameController.dispose();
+    lastNameController.dispose();
+    dateOfBirthController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadMembershipData() async {
@@ -36,9 +49,12 @@ class _MembershipPageState extends State<MembershipPage> {
     if (membershipData == null) {
       setState(() {
         isLoading = false;
-        firstName = widget.user;
-        lastName = "";
-        dateOfBirth = "Unknown";
+        firstNameController.text = widget.user;
+        lastNameController.text = "";
+        dateOfBirthController.text = "";
+        _originalFirstName = widget.user;
+        _originalLastName = "";
+        _originalDateOfBirth = "";
         subscriptionType = "Unknown subscription";
         expirationDate = "Unknown";
         monthlyPrice = "Unknown";
@@ -48,9 +64,18 @@ class _MembershipPageState extends State<MembershipPage> {
 
     setState(() {
       isLoading = false;
-      firstName = membershipData["first_name"]?.toString() ?? widget.user;
-      lastName = membershipData["last_name"]?.toString() ?? "";
-      dateOfBirth = _formatDate(membershipData["date_of_birth"]?.toString());
+      final initialFirstName =
+          membershipData["first_name"]?.toString() ?? widget.user;
+      final initialLastName = membershipData["last_name"]?.toString() ?? "";
+      final initialDateOfBirth =
+          membershipData["date_of_birth"]?.toString() ?? "";
+
+      firstNameController.text = initialFirstName;
+      lastNameController.text = initialLastName;
+      dateOfBirthController.text = initialDateOfBirth;
+      _originalFirstName = initialFirstName.trim();
+      _originalLastName = initialLastName.trim();
+      _originalDateOfBirth = initialDateOfBirth.trim();
       subscriptionType =
           "${_capitalize(membershipData["subscription_type"]?.toString() ?? "Unknown")} Subscription";
       expirationDate = _formatDate(
@@ -81,6 +106,121 @@ class _MembershipPageState extends State<MembershipPage> {
     return DateFormat("MMMM d, y").format(parsed);
   }
 
+  DateTime? _parseDate(String value) {
+    if (value.trim().isEmpty) {
+      return null;
+    }
+
+    return DateTime.tryParse(value.trim());
+  }
+
+  DateTime _sixteenYearsAgo(DateTime referenceDate) {
+    return DateTime(
+      referenceDate.year - 16,
+      referenceDate.month,
+      referenceDate.day,
+    );
+  }
+
+  DateTime _clampDate(
+    DateTime value,
+    DateTime lowerBound,
+    DateTime upperBound,
+  ) {
+    if (value.isBefore(lowerBound)) {
+      return lowerBound;
+    }
+    if (value.isAfter(upperBound)) {
+      return upperBound;
+    }
+    return value;
+  }
+
+  String? _validateName(String? value, String fieldName) {
+    final trimmedValue = value?.trim() ?? "";
+
+    if (trimmedValue.isEmpty) {
+      return "$fieldName must not be empty.";
+    }
+
+    if (trimmedValue.length > 15) {
+      return "$fieldName must be at most 15 characters long.";
+    }
+
+    return null;
+  }
+
+  String? _validateDateOfBirth(String? value) {
+    final parsedDate = _parseDate(value ?? "");
+    if (parsedDate == null) {
+      return "Enter a valid date.";
+    }
+
+    final ageLimit = _sixteenYearsAgo(DateTime.now());
+    if (parsedDate.isAfter(ageLimit)) {
+      return "You must be at least 16 years old.";
+    }
+
+    return null;
+  }
+
+  void _handleSavePressed() {
+    final isValid = formKey.currentState?.validate() ?? false;
+    if (!isValid) {
+      return;
+    }
+
+    FocusScope.of(context).unfocus();
+
+    setState(() {
+      _originalFirstName = firstNameController.text.trim();
+      _originalLastName = lastNameController.text.trim();
+      _originalDateOfBirth = dateOfBirthController.text.trim();
+    });
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text("Your changes were saved."),
+        duration: Duration(seconds: 2),
+      ),
+    );
+  }
+
+  Future<void> _pickDateOfBirth() async {
+    final today = DateTime.now();
+    final lastSelectableDate = _sixteenYearsAgo(today);
+    final currentValue =
+        _parseDate(dateOfBirthController.text) ?? lastSelectableDate;
+    final initialDate = _clampDate(
+      currentValue,
+      DateTime(1900),
+      lastSelectableDate,
+    );
+
+    final selectedDate = await showDatePicker(
+      context: context,
+      initialDate: initialDate,
+      firstDate: DateTime(1900),
+      lastDate: lastSelectableDate,
+    );
+
+    if (selectedDate == null || !mounted) {
+      return;
+    }
+
+    setState(() {
+      dateOfBirthController.text = DateFormat(
+        "yyyy-MM-dd",
+      ).format(selectedDate);
+    });
+  }
+
+  bool get hasUnsavedChanges {
+    return firstNameController.text.trim() != _originalFirstName ||
+        lastNameController.text.trim() != _originalLastName ||
+        dateOfBirthController.text.trim() != _originalDateOfBirth;
+  }
+
   @override
   Widget build(BuildContext context) {
     var outlineInputBorder = OutlineInputBorder(
@@ -104,184 +244,156 @@ class _MembershipPageState extends State<MembershipPage> {
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(16.0),
-          child: Column(
-            spacing: 24,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              SizedBox(
-                width: double.maxFinite,
-                height: Get.height * .35,
-                child: Card(
-                  elevation: 8,
-                  color: Color(0xffe3f0e1),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadiusGeometry.circular(32),
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: Column(
-                      spacing: 12,
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              "Member Details",
-                              style: TextStyle(
-                                fontSize: 24,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                            TextButton(
-                              onPressed: () {},
-                              child: Text("Save"),
-                              style: ButtonStyle(
-                                backgroundColor: WidgetStatePropertyAll(
-                                  Color(0xff3fa220),
-                                ),
-                                foregroundColor: WidgetStatePropertyAll(
-                                  Colors.white,
+          child: Form(
+            key: formKey,
+            child: Column(
+              spacing: 24,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                SizedBox(
+                  width: double.maxFinite,
+                  child: Card(
+                    elevation: 8,
+                    color: Color(0xffe3f0e1),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadiusGeometry.circular(32),
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Column(
+                        spacing: 12,
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                "Member Details",
+                                style: TextStyle(
+                                  fontSize: 24,
+                                  fontWeight: FontWeight.w500,
                                 ),
                               ),
-                            ),
-                          ],
-                        ),
-                        TextFormField(
-                          onChanged: (_) {
-                            setState(() {});
-                          },
-                          validator: (value) {
-                            return null;
-                          },
-                          decoration: InputDecoration(
-                            hint: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              spacing: 12,
-                              children: [
-                                Icon(Icons.person),
-                                Text(
-                                  isLoading ? "Loading..." : firstName,
-                                  style: TextStyle(fontSize: 20),
+                              if (hasUnsavedChanges)
+                                TextButton(
+                                  onPressed: isLoading
+                                      ? null
+                                      : _handleSavePressed,
+                                  style: ButtonStyle(
+                                    backgroundColor: WidgetStatePropertyAll(
+                                      Color(0xff3fa220),
+                                    ),
+                                    foregroundColor: WidgetStatePropertyAll(
+                                      Colors.white,
+                                    ),
+                                  ),
+                                  child: Text("Save"),
                                 ),
-                              ],
-                            ),
-                            filled: true,
-                            fillColor: Colors.white,
-                            enabledBorder: outlineInputBorder,
-                            focusedBorder: outlineInputBorder,
-                            border: outlineInputBorder,
+                            ],
                           ),
-                        ),
-                        TextFormField(
-                          onChanged: (_) {
-                            setState(() {});
-                          },
-                          validator: (value) {
-                            return null;
-                          },
-                          decoration: InputDecoration(
-                            hint: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              spacing: 12,
-                              children: [
-                                Icon(Icons.person),
-                                Text(
-                                  isLoading ? "Loading..." : lastName,
-                                  style: TextStyle(fontSize: 20),
-                                ),
-                              ],
-                            ),
-                            filled: true,
-                            fillColor: Colors.white,
-                            enabledBorder: outlineInputBorder,
-                            focusedBorder: outlineInputBorder,
-                            border: outlineInputBorder,
-                          ),
-                        ),
-                        InkWell(
-                          onTap: () => Get.dialog(
-                            Dialog(
-                              child: Material(
-                                child: CalendarDatePicker(
-                                  initialDate: DateTime.now(),
-                                  firstDate: DateTime(2000),
-                                  lastDate: DateTime(2100),
-                                  onDateChanged: (value) {
-                                    setState(() {});
-                                  },
-                                ),
-                              ),
-                            ),
-                          ),
-                          child: TextFormField(
-                            enabled: false,
+                          TextFormField(
+                            controller: firstNameController,
+                            enabled: !isLoading,
                             onChanged: (_) {
                               setState(() {});
                             },
                             validator: (value) {
-                              return null;
+                              return _validateName(value, "First name");
                             },
                             decoration: InputDecoration(
-                              hint: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                spacing: 12,
-                                children: [
-                                  Icon(Icons.calendar_month),
-                                  Text(
-                                    isLoading ? "Loading..." : dateOfBirth,
-                                    style: TextStyle(fontSize: 20),
-                                  ),
-                                ],
-                              ),
+                              labelText: "First name",
+                              prefixIcon: const Icon(Icons.person),
                               filled: true,
                               fillColor: Colors.white,
-                              disabledBorder: outlineInputBorder,
                               enabledBorder: outlineInputBorder,
                               focusedBorder: outlineInputBorder,
                               border: outlineInputBorder,
                             ),
                           ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-              SizedBox(
-                width: double.maxFinite,
-                height: Get.height * .2,
-                child: Card(
-                  elevation: 8,
-                  color: Color(0xffe3f0e1),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadiusGeometry.circular(32),
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.spaceAround,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          "Subscription Details",
-                          style: TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
+                          TextFormField(
+                            controller: lastNameController,
+                            enabled: !isLoading,
+                            onChanged: (_) {
+                              setState(() {});
+                            },
+                            validator: (value) {
+                              return _validateName(value, "Last name");
+                            },
+                            decoration: InputDecoration(
+                              labelText: "Last name",
+                              prefixIcon: const Icon(Icons.person),
+                              filled: true,
+                              fillColor: Colors.white,
+                              enabledBorder: outlineInputBorder,
+                              focusedBorder: outlineInputBorder,
+                              border: outlineInputBorder,
+                            ),
                           ),
-                        ),
-                        Text(isLoading ? "Loading..." : subscriptionType),
-                        Text(
-                          isLoading
-                              ? "Loading..."
-                              : "Expires on $expirationDate",
-                        ),
-                        Text(isLoading ? "Loading..." : "$monthlyPrice€/month"),
-                      ],
+                          TextFormField(
+                            controller: dateOfBirthController,
+                            enabled: !isLoading,
+                            keyboardType: TextInputType.datetime,
+                            onChanged: (_) {
+                              setState(() {});
+                            },
+                            validator: _validateDateOfBirth,
+                            decoration: InputDecoration(
+                              labelText: "Date of birth",
+                              hintText: "YYYY-MM-DD",
+                              prefixIcon: const Icon(Icons.calendar_month),
+                              suffixIcon: IconButton(
+                                onPressed: isLoading ? null : _pickDateOfBirth,
+                                icon: const Icon(Icons.date_range),
+                              ),
+                              filled: true,
+                              fillColor: Colors.white,
+                              enabledBorder: outlineInputBorder,
+                              focusedBorder: outlineInputBorder,
+                              border: outlineInputBorder,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),
-              ),
-            ],
+                SizedBox(
+                  width: double.maxFinite,
+                  height: Get.height * .2,
+                  child: Card(
+                    elevation: 8,
+                    color: Color(0xffe3f0e1),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadiusGeometry.circular(32),
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.spaceAround,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            "Subscription Details",
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          Text(isLoading ? "Loading..." : subscriptionType),
+                          Text(
+                            isLoading
+                                ? "Loading..."
+                                : "Expires on $expirationDate",
+                          ),
+                          Text(
+                            isLoading ? "Loading..." : "$monthlyPrice€/month",
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
