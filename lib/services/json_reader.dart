@@ -8,4 +8,9 @@ class JsonReader {
     final data = await jsonDecode(json);
     return data;
   }
+
+  static Future<List> getStudios() async {
+    final data = await readJson("assets/Data.json");
+    return data["studios"];
+  }
 }
