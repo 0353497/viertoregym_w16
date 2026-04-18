@@ -118,24 +118,96 @@ class _StudiosPageState extends State<StudiosPage> {
         child: Padding(
           padding: const EdgeInsets.all(8.0),
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
                 studio["name"],
                 style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
               ),
-              for (var i = 0; i < 7; i++)
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Column(
+                    mainAxisSize: MainAxisSize.min,
+                    spacing: 12,
+                    children: [
+                      for (var i = 0; i < 7; i++)
+                        Text(
+                          days[i],
+                          style: TextStyle(
+                            fontWeight: DateTime.now().weekday - 1 == i
+                                ? FontWeight.bold
+                                : null,
+                          ),
+                        ),
+                      SizedBox(),
+                    ],
+                  ),
+                  Column(
+                    mainAxisSize: MainAxisSize.min,
+                    spacing: 12,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      for (var i = 0; i < 7; i++)
+                        Text(
+                          studio["opening_hours"][days[i]] == null
+                              ? "Closed"
+                              : "${studio["opening_hours"][days[i]]["from"]} - ${studio["opening_hours"][days[i]]["until"]}",
+                          style: TextStyle(
+                            fontWeight: DateTime.now().weekday - 1 == i
+                                ? FontWeight.bold
+                                : null,
+                          ),
+                        ),
+                    ],
+                  ),
+
+                  SizedBox(),
+                ],
+              ),
+              Expanded(
+                child: Row(
                   children: [
-                    Text(days[i]),
-                    Text(
-                      studio["opening_hours"][days[i]] == null
-                          ? "Closed"
-                          : "${studio["opening_hours"][days[i]]["from"]} - ${studio["opening_hours"][days[i]]["until"]}",
-                    ),
-                    SizedBox(),
+                    if (studio["opening_hours"][days[DateTime.now().weekday -
+                            1]] !=
+                        null)
+                      for (
+                        int i = 0;
+                        i <
+                            (studio["opening_hours"][days[DateTime.now()
+                                            .weekday -
+                                        1]]["occupancies"]
+                                    as List)
+                                .length;
+                        i++
+                      )
+                        SizedBox(
+                          height: 200,
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text("${(i + 6).toString().padLeft(2, "0")}"),
+                              Container(
+                                width: 10,
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(32),
+                                  color: Color(0xff3fa220),
+                                ),
+                                height:
+                                    ((studio["opening_hours"][days[DateTime.now()
+                                                    .weekday -
+                                                1]]["occupancies"][i]
+                                            as int)
+                                        .toDouble() *
+                                    2),
+                              ),
+                            ],
+                          ),
+                        ),
                   ],
                 ),
+              ),
             ],
           ),
         ),
