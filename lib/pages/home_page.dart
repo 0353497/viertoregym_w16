@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get_core/src/get_main.dart';
 import 'package:get/get_navigation/src/extension_navigation.dart';
+import 'package:viertoregym/pages/creative_page.dart';
 import 'package:viertoregym/pages/membership_page.dart';
 import 'package:viertoregym/pages/studios_page.dart';
 
@@ -161,6 +162,56 @@ class _HomePageState extends State<HomePage> {
                               ),
                               Text(
                                 "Studios",
+                                style: TextStyle(
+                                  color: Color(0xff3e9f1f),
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 32,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              InkWell(
+                onTap: () {
+                  Get.to(() => CreativePage());
+                },
+                child: SizedBox(
+                  width: double.maxFinite,
+                  height: Get.height * .12,
+                  child: Card(
+                    elevation: 8,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadiusGeometry.circular(32),
+                    ),
+                    child: Stack(
+                      clipBehavior: Clip.hardEdge,
+                      children: [
+                        Positioned(
+                          right: -240,
+                          top: -150,
+                          child: Container(
+                            width: 450,
+                            height: 450,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: Color(0xffddeddb),
+                            ),
+                          ),
+                        ),
+                        Positioned.fill(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            spacing: 12,
+                            children: [
+                              Icon(Icons.nordic_walking),
+                              Text(
+                                "walking",
                                 style: TextStyle(
                                   color: Color(0xff3e9f1f),
                                   fontWeight: FontWeight.bold,

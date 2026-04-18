@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:get/get_navigation/get_navigation.dart';
 import 'package:get/state_manager.dart';
+import 'package:intl/intl.dart';
+import 'package:viertoregym/services/json_reader.dart';
 
 class MembershipPage extends StatefulWidget {
   const MembershipPage({super.key, required this.user});
@@ -10,6 +12,75 @@ class MembershipPage extends StatefulWidget {
 }
 
 class _MembershipPageState extends State<MembershipPage> {
+  bool isLoading = true;
+  String firstName = "";
+  String lastName = "";
+  String dateOfBirth = "";
+  String subscriptionType = "";
+  String expirationDate = "";
+  String monthlyPrice = "";
+
+  @override
+  void initState() {
+    super.initState();
+    _loadMembershipData();
+  }
+
+  Future<void> _loadMembershipData() async {
+    final membershipData = await JsonReader.getMembershipForUser(widget.user);
+
+    if (!mounted) {
+      return;
+    }
+
+    if (membershipData == null) {
+      setState(() {
+        isLoading = false;
+        firstName = widget.user;
+        lastName = "";
+        dateOfBirth = "Unknown";
+        subscriptionType = "Unknown subscription";
+        expirationDate = "Unknown";
+        monthlyPrice = "Unknown";
+      });
+      return;
+    }
+
+    setState(() {
+      isLoading = false;
+      firstName = membershipData["first_name"]?.toString() ?? widget.user;
+      lastName = membershipData["last_name"]?.toString() ?? "";
+      dateOfBirth = _formatDate(membershipData["date_of_birth"]?.toString());
+      subscriptionType =
+          "${_capitalize(membershipData["subscription_type"]?.toString() ?? "Unknown")} Subscription";
+      expirationDate = _formatDate(
+        membershipData["expiration_date"]?.toString(),
+      );
+      monthlyPrice =
+          membershipData["monthly_price_eur"]?.toString() ?? "Unknown";
+    });
+  }
+
+  String _capitalize(String value) {
+    if (value.isEmpty) {
+      return value;
+    }
+    return value[0].toUpperCase() + value.substring(1).toLowerCase();
+  }
+
+  String _formatDate(String? rawDate) {
+    if (rawDate == null || rawDate.isEmpty) {
+      return "Unknown";
+    }
+
+    final parsed = DateTime.tryParse(rawDate);
+    if (parsed == null) {
+      return rawDate;
+    }
+
+    return DateFormat("MMMM d, y").format(parsed);
+  }
+
   @override
   Widget build(BuildContext context) {
     var outlineInputBorder = OutlineInputBorder(
@@ -89,7 +160,7 @@ class _MembershipPageState extends State<MembershipPage> {
                               children: [
                                 Icon(Icons.person),
                                 Text(
-                                  "${widget.user}",
+                                  isLoading ? "Loading..." : firstName,
                                   style: TextStyle(fontSize: 20),
                                 ),
                               ],
@@ -115,7 +186,7 @@ class _MembershipPageState extends State<MembershipPage> {
                               children: [
                                 Icon(Icons.person),
                                 Text(
-                                  "Weinstein",
+                                  isLoading ? "Loading..." : lastName,
                                   style: TextStyle(fontSize: 20),
                                 ),
                               ],
@@ -129,13 +200,17 @@ class _MembershipPageState extends State<MembershipPage> {
                         ),
                         InkWell(
                           onTap: () => Get.dialog(
-                            CalendarDatePicker(
-                              initialDate: DateTime.now(),
-                              firstDate: DateTime(2000),
-                              lastDate: DateTime(2100),
-                              onDateChanged: (value) {
-                                setState(() {});
-                              },
+                            Dialog(
+                              child: Material(
+                                child: CalendarDatePicker(
+                                  initialDate: DateTime.now(),
+                                  firstDate: DateTime(2000),
+                                  lastDate: DateTime(2100),
+                                  onDateChanged: (value) {
+                                    setState(() {});
+                                  },
+                                ),
+                              ),
                             ),
                           ),
                           child: TextFormField(
@@ -153,13 +228,14 @@ class _MembershipPageState extends State<MembershipPage> {
                                 children: [
                                   Icon(Icons.calendar_month),
                                   Text(
-                                    "June 7, 1983",
+                                    isLoading ? "Loading..." : dateOfBirth,
                                     style: TextStyle(fontSize: 20),
                                   ),
                                 ],
                               ),
                               filled: true,
                               fillColor: Colors.white,
+                              disabledBorder: outlineInputBorder,
                               enabledBorder: outlineInputBorder,
                               focusedBorder: outlineInputBorder,
                               border: outlineInputBorder,
@@ -193,9 +269,13 @@ class _MembershipPageState extends State<MembershipPage> {
                             fontWeight: FontWeight.bold,
                           ),
                         ),
-                        Text("Bronze Subscription"),
-                        Text("Expires on June 29, 2025"),
-                        Text("20.00€/month"),
+                        Text(isLoading ? "Loading..." : subscriptionType),
+                        Text(
+                          isLoading
+                              ? "Loading..."
+                              : "Expires on $expirationDate",
+                        ),
+                        Text(isLoading ? "Loading..." : "$monthlyPrice€/month"),
                       ],
                     ),
                   ),
