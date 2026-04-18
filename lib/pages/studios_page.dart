@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:intl/intl.dart';
 import 'package:viertoregym/services/json_reader.dart';
 
 class StudiosPage extends StatefulWidget {
@@ -15,34 +16,54 @@ class _StudiosPageState extends State<StudiosPage> {
     super.initState();
   }
 
-  late Future<List> studios = JsonReader.getStudios();
-  int _selectedStudioIndex = 0;
+  late Future<List<dynamic>> studiosAndBroadcasts = Future.wait([
+    JsonReader.getStudios(),
+    JsonReader.getBroadcastInformation(),
+  ]);
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: FutureBuilder(
-        future: studios,
+        future: studiosAndBroadcasts,
         builder: (context, asyncSnapshot) {
           if (asyncSnapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           }
 
-          final studioList = asyncSnapshot.data ?? [];
+          final response = asyncSnapshot.data ?? [];
+          final studioList = response.isNotEmpty
+              ? response[0] as List
+              : <dynamic>[];
+          final broadcastList = response.length > 1
+              ? response[1] as List
+              : <dynamic>[];
           if (studioList.isEmpty) {
             return const Center(child: Text("No studios available"));
           }
 
-          final selectedStudio =
-              studioList[_selectedStudioIndex.clamp(0, studioList.length - 1)];
-          final newsText =
-              selectedStudio["news"]?.toString() ??
-              "No news available for this studio";
+          final latestBroadcasts =
+              broadcastList.whereType<Map<String, dynamic>>().toList()
+                ..sort((a, b) {
+                  final dateA = DateTime.tryParse(
+                    a["created_on"]?.toString() ?? "",
+                  );
+                  final dateB = DateTime.tryParse(
+                    b["created_on"]?.toString() ?? "",
+                  );
+
+                  if (dateA == null && dateB == null) return 0;
+                  if (dateA == null) return 1;
+                  if (dateB == null) return -1;
+                  return dateB.compareTo(dateA);
+                });
+
+          final broadcastItems = latestBroadcasts.take(2).toList();
 
           return Column(
             children: [
               Container(
-                height: 160,
+                height: 200,
                 width: double.maxFinite,
                 color: const Color(0xffc7e2c3),
                 child: Padding(
@@ -63,11 +84,23 @@ class _StudiosPageState extends State<StudiosPage> {
                         mainAxisAlignment: MainAxisAlignment.center,
                         spacing: 4,
                         children: [
-                          Text(newsText),
-                          Text(
-                            selectedStudio["name"].toString(),
-                            style: const TextStyle(color: Colors.grey),
-                          ),
+                          if (broadcastItems.isEmpty)
+                            const Text("No broadcast information available")
+                          else
+                            for (final broadcast in broadcastItems) ...[
+                              Text(broadcast["message"]?.toString() ?? ""),
+                              Text(
+                                DateFormat("MMMM d, yyyy").format(
+                                  DateTime.tryParse(
+                                        broadcast["created_on"]?.toString() ??
+                                            "",
+                                      ) ??
+                                      DateTime.now(),
+                                ),
+                                style: const TextStyle(color: Colors.grey),
+                              ),
+                              const SizedBox(height: 4),
+                            ],
                         ],
                       ),
                     ],
@@ -113,10 +146,6 @@ class _StudiosPageState extends State<StudiosPage> {
   }
 
   void selectStudio(int index, List studios) {
-    setState(() {
-      _selectedStudioIndex = index;
-    });
-
     showData(index, studios);
   }
 
@@ -152,6 +181,19 @@ class _StudiosPageState extends State<StudiosPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    width: 80,
+                    height: 10,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(32),
+                      color: Colors.grey,
+                    ),
+                  ),
+                ],
+              ),
               Text(
                 studio["name"],
                 style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
@@ -161,6 +203,7 @@ class _StudiosPageState extends State<StudiosPage> {
                 children: [
                   Column(
                     mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     spacing: 12,
                     children: [
                       for (var i = 0; i < 7; i++)
@@ -199,6 +242,7 @@ class _StudiosPageState extends State<StudiosPage> {
               ),
               Expanded(
                 child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     if (todayOpeningHours != null)
                       for (int i = 0; i < occupancies.length; i++)
@@ -206,10 +250,11 @@ class _StudiosPageState extends State<StudiosPage> {
                           height: 200,
                           child: Row(
                             crossAxisAlignment: CrossAxisAlignment.end,
-                            mainAxisSize: MainAxisSize.min,
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               Text(
                                 "${(startHour + i).toString().padLeft(2, "0")}",
+                                style: TextStyle(fontSize: 12),
                               ),
                               Container(
                                 width: 10,

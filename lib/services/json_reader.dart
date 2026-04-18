@@ -14,6 +14,11 @@ class JsonReader {
     return data["studios"];
   }
 
+  static Future<List> getBroadcastInformation() async {
+    final data = await readJson("assets/Data.json");
+    return data["broadcast_information"] ?? [];
+  }
+
   static Future<Map<String, dynamic>?> getMembershipForUser(
     String username,
   ) async {
